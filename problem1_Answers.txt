@@ -1,0 +1,74 @@
+LAB 3 - PROBLEM 1 ANSWERS
+Setup: mysql -u root -p < problem1_DDL.sql ; mysql -u root -p < problem1_DML.sql
+Then: mysql -u root -p company
+(The error text below is the standard MySQL 8 format; the constraint names come from problem1_DDL.sql.)
+
+--------------------------------------------------------------------
+Q1.1  Insert a DEPARTMENT row that references an EMPLOYEE row, then delete that employee.
+--------------------------------------------------------------------
+SQL:
+  INSERT INTO department (Dnumber, Dname, mgr_ssn, mgr_start_date)
+  VALUES (4, 'HR', '555666777', '2024-01-01');
+  DELETE FROM employee WHERE ssn = '555666777';
+
+Output:
+  1st statement: Query OK, 1 row affected
+  2nd statement:
+  ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key
+  constraint fails (`company`.`department`, CONSTRAINT `fk_dept_mgr`
+  FOREIGN KEY (`mgr_ssn`) REFERENCES `employee` (`ssn`))
+
+Explanation: the employee is the referenced (parent) row; department 4 still
+points to it, so MySQL rejects the delete to keep referential integrity.
+To delete it we must first change/remove the department that uses it
+(e.g. DELETE FROM department WHERE Dnumber = 4;).
+
+--------------------------------------------------------------------
+Q1.2  Insert a PROJECT row that references a DEPARTMENT that doesn't exist.
+--------------------------------------------------------------------
+SQL:
+  INSERT INTO project (Pnumber, Pname, Plocation, Dno)
+  VALUES (40, 'Ghost', 'Aswan', 99);
+
+Output:
+  ERROR 1452 (23000): Cannot add or update a child row: a foreign key
+  constraint fails (`company`.`project`, CONSTRAINT `fk_proj_dept`
+  FOREIGN KEY (`Dno`) REFERENCES `department` (`Dnumber`))
+
+Explanation: Dno = 99 is not NULL and there is no department 99, so the
+foreign key value does not match any primary key value. The row is rejected.
+Fix: insert department 99 first, or use an existing Dno, or NULL.
+
+--------------------------------------------------------------------
+Q1.3  If mgr_ssn and Dno are both NOT NULL, how do we insert the first row?
+--------------------------------------------------------------------
+Problem: it is a circular dependency. The first employee needs an existing
+department (Dno), and the first department needs an existing employee
+(mgr_ssn). Neither can be inserted first.
+
+Run this on a fresh DDL (re-run problem1_DDL.sql, do NOT run the DML):
+SQL:
+  ALTER TABLE employee   MODIFY Dno     INT      NOT NULL;
+  ALTER TABLE department MODIFY mgr_ssn CHAR(9)  NOT NULL;
+
+  INSERT INTO employee (ssn, fname, lname, Dno)
+  VALUES ('123456789', 'Ahmed', 'Hassan', 1);
+
+Output of the plain insert:
+  ERROR 1452 (23000): Cannot add or update a child row: a foreign key
+  constraint fails (`company`.`employee`, CONSTRAINT `fk_emp_dept`
+  FOREIGN KEY (`Dno`) REFERENCES `department` (`Dnumber`))
+
+Solution: switch the foreign key check off temporarily, insert both rows,
+switch it on again:
+  SET FOREIGN_KEY_CHECKS = 0;
+  INSERT INTO employee (ssn, fname, lname, Dno)
+    VALUES ('123456789', 'Ahmed', 'Hassan', 1);
+  INSERT INTO department (Dnumber, Dname, mgr_ssn)
+    VALUES (1, 'Research', '123456789');
+  SET FOREIGN_KEY_CHECKS = 1;
+
+Output: Query OK, 1 row affected (for each insert).
+Other solution: make one of the two columns nullable (what problem1_DDL.sql
+does): insert the employee with Dno = NULL, then the department, then
+UPDATE the employee's Dno.

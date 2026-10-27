@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ mode }} author</h2>
+<form method="post" class="card">
+  <label>Name <input name="name" maxlength="80" value="{{ author.name or '' }}"></label>
+  <label>Country <input name="country" maxlength="50" value="{{ author.country or '' }}"></label>
+  <button class="btn">Save</button>
+  <a href="{{ url_for('index') }}">Cancel</a>
+</form>
+{% endblock %}

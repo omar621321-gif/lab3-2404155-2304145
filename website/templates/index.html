@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <div class="head"><h2>Books</h2><a class="btn" href="{{ url_for('add_book') }}">+ Add book</a></div>
+  <div class="scroll">
+  <table>
+    <tr><th>ID</th><th>Title</th><th>Price</th><th>Author ID</th><th></th></tr>
+    {% for b in books %}
+    <tr>
+      <td>{{ b.book_id }}</td><td>{{ b.title }}</td><td>{{ b.price }}</td><td>{{ b.author_id }}</td>
+      <td class="actions">
+        <a class="btn small" href="{{ url_for('edit_book', book_id=b.book_id) }}">Edit</a>
+        <form method="post" action="{{ url_for('delete_book', book_id=b.book_id) }}"
+              onsubmit="return confirm('Remove this book?')">
+          <button class="btn small danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="5">No books yet.</td></tr>{% endfor %}
+  </table>
+  </div>
+</section>
+
+<section>
+  <div class="head"><h2>Authors</h2><a class="btn" href="{{ url_for('add_author') }}">+ Add author</a></div>
+  <div class="scroll">
+  <table>
+    <tr><th>ID</th><th>Name</th><th>Country</th><th></th></tr>
+    {% for a in authors %}
+    <tr>
+      <td>{{ a.author_id }}</td><td>{{ a.name }}</td><td>{{ a.country or '' }}</td>
+      <td class="actions">
+        <a class="btn small" href="{{ url_for('edit_author', author_id=a.author_id) }}">Edit</a>
+        <form method="post" action="{{ url_for('delete_author', author_id=a.author_id) }}"
+              onsubmit="return confirm('Remove this author AND all their books?')">
+          <button class="btn small danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="4">No authors yet.</td></tr>{% endfor %}
+  </table>
+  </div>
+</section>
+{% endblock %}
